@@ -13,5 +13,5 @@ BiaxialSeekBar
 ======
 X-Y SeekBars
 
-![ScreenShot](https://raw.github.com/kshoji/AndroidCustomViews/master/ovalseekbar.png)
+![ScreenShot](https://raw.github.com/kshoji/AndroidCustomViews/master/BiaxialSeekBar.png)
 
