@@ -15,3 +15,7 @@ X-Y SeekBars
 
 ![ScreenShot](https://raw.github.com/kshoji/AndroidCustomViews/master/BiaxialSeekBar.png)
 
+Licence
+=======
+
+[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
