@@ -57,8 +57,11 @@
             <enum name="pointer" value="0" />
             <enum name="value" value="1" />
         </attr>
+        <attr name="wheelValueSeparatorSizeAngle" format="integer" />
         <attr name="clickableWheel" format="boolean" />
         <attr name="pointerValueLimit" format="boolean" />
+        <attr name="android:progressDrawable" />
+        <attr name="progressDrawableSize" format="integer" />
     </declare-styleable>
 
 </resources>

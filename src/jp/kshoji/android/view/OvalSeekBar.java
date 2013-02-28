@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
@@ -25,6 +26,7 @@ public class OvalSeekBar extends SeekBar {
 	// view configuration
 	private int wheelSize;
 	private int wheelColor;
+	private int wheelValueSeparatorSizeAngle = 5;
 	private int pointerSizeAngle;
 	private int pointerColor;
 	private int pointerType;
@@ -37,6 +39,9 @@ public class OvalSeekBar extends SeekBar {
 	private int max;
 	private int wheelZeroAngle;
 	private int wheelWholeAngle;
+	private Drawable progressDrawable;
+	private int progressDrawableSize;
+
 	
 	private OnSeekBarChangeListener onSeekBarChangeListener;
 	
@@ -60,6 +65,7 @@ public class OvalSeekBar extends SeekBar {
 		
 		wheelSize = typedArray.getDimensionPixelSize(R.styleable.OvalSeekBar_wheelSize, 16);
 		wheelColor = typedArray.getColor(R.styleable.OvalSeekBar_wheelColor, Color.BLACK);
+		wheelValueSeparatorSizeAngle = typedArray.getInt(R.styleable.OvalSeekBar_wheelValueSeparatorSizeAngle, 0);
 		wheelZeroAngle = typedArray.getInt(R.styleable.OvalSeekBar_wheelZeroAngle, 0);
 		wheelWholeAngle = typedArray.getInt(R.styleable.OvalSeekBar_wheelWholeAngle, 270);
 		
@@ -68,16 +74,19 @@ public class OvalSeekBar extends SeekBar {
 		pointerType = typedArray.getInt(R.styleable.OvalSeekBar_pointerType, 0);
 		isWheelDirectionClockwise = typedArray.getInt(R.styleable.OvalSeekBar_wheelDirection, 0) == 0;
 		isClickableWheel = typedArray.getBoolean(R.styleable.OvalSeekBar_clickableWheel, false);
+		progressDrawableSize = typedArray.getInt(R.styleable.OvalSeekBar_progressDrawableSize, 100);
 		
 		min = typedArray.getInt(R.styleable.OvalSeekBar_min, 0);
 
 		typedArray.recycle();
 		
-		TypedArray androidTypedArray = getContext().obtainStyledAttributes(attrs, new int[] { android.R.attr.textSize, android.R.attr.textColor, android.R.attr.max, android.R.attr.progress });
+		TypedArray androidTypedArray = getContext().obtainStyledAttributes(attrs, new int[] { android.R.attr.textSize, android.R.attr.textColor, android.R.attr.max, android.R.attr.progress, android.R.attr.progressDrawable});
 		textSize = androidTypedArray.getDimensionPixelSize(0, 12);
 		textColor = androidTypedArray.getColor(1, Color.BLUE);
 		max = androidTypedArray.getInt(2, 100);
 		progress = androidTypedArray.getInt(3, 0);
+		progressDrawable = androidTypedArray.getDrawable(4);
+
 		androidTypedArray.recycle();
 		
 		// reset progress value
@@ -105,6 +114,7 @@ public class OvalSeekBar extends SeekBar {
 		canvas.drawText(textToDraw, x / 2, y / 2 + (bounds.height() * 0.3f), textPaint);
 	}
 	
+	
 	/*
 	 * (non-Javadoc)
 	 * @see android.view.View#onDraw(android.graphics.Canvas)
@@ -115,47 +125,66 @@ public class OvalSeekBar extends SeekBar {
 		wheelRectangle.set(-wheelRadius + wheelSize / 2, -wheelRadius + wheelSize / 2, wheelRadius - wheelSize / 2, wheelRadius - wheelSize / 2);
 		
 		canvas.translate(wheelRadius, wheelRadius);
-		if (isWheelDirectionClockwise) {
-			canvas.drawArc(wheelRectangle, wheelZeroAngle, wheelWholeAngle, false, wheelPaint);
-		} else {
-			canvas.drawArc(wheelRectangle, wheelZeroAngle - wheelWholeAngle, wheelWholeAngle, false, wheelPaint);
+		
+		for (int i = min; i <= max; i++) {
+			if (isWheelDirectionClockwise) {
+				float minAngle = wheelZeroAngle;
+				double pointerAngle = wheelWholeAngle / (1.0 + max - min);
+				
+				if (pointerType == 0) {
+					// pointer
+					if (i == getProgress()) {
+						canvas.drawArc(wheelRectangle, (float) (minAngle + pointerAngle * (i - min) + pointerAngle / 2 - pointerSizeAngle / 2), pointerSizeAngle, false, pointerPaint);
+					} else {
+						canvas.drawArc(wheelRectangle, (float) (minAngle + pointerAngle * (i - min)), (float) pointerAngle - wheelValueSeparatorSizeAngle, false, wheelPaint);
+					}
+				} else {
+					// value
+					if (i <= getProgress()) {
+						canvas.drawArc(wheelRectangle, (float) (minAngle + pointerAngle * (i - min)), (float) pointerAngle - wheelValueSeparatorSizeAngle, false, pointerPaint);
+					} else {
+						canvas.drawArc(wheelRectangle, (float) (minAngle + pointerAngle * (i - min)), (float) pointerAngle - wheelValueSeparatorSizeAngle, false, wheelPaint);
+					}
+				}
+			} else {
+				float minAngle = wheelZeroAngle + wheelWholeAngle;
+				double pointerAngle = wheelWholeAngle / (1.0 + max - min);
+				
+				if (pointerType == 0) {
+					// pointer
+					if (i == getProgress()) {
+						canvas.drawArc(wheelRectangle, (float) (minAngle + pointerAngle * (max - i)), (float) pointerAngle - wheelValueSeparatorSizeAngle, false, pointerPaint);
+					} else {
+						canvas.drawArc(wheelRectangle, (float) (minAngle + pointerAngle * (max - i)), (float) pointerAngle - wheelValueSeparatorSizeAngle, false, wheelPaint);
+					}
+				} else {
+					// value
+					if (i <= getProgress()) {
+						canvas.drawArc(wheelRectangle, (float) (minAngle + pointerAngle * (max - i)), (float) pointerAngle - wheelValueSeparatorSizeAngle, false, pointerPaint);
+					} else {
+						canvas.drawArc(wheelRectangle, (float) (minAngle + pointerAngle * (max - i)), (float) pointerAngle - wheelValueSeparatorSizeAngle, false, wheelPaint);
+					}
+				}
+			}
+		}
+	
+		if (progressDrawable != null) {
+			double pointerAngle = -(getProgress() - min + 0.5) * wheelWholeAngle / (1.0 + max - min);
+			int x = (int)(-Math.cos(pointerAngle * Math.PI / 180.0) * wheelRectangle.width() / 2);
+			int y;
+			if (isWheelDirectionClockwise) {
+				y = (int)(Math.sin(pointerAngle * Math.PI / 180.0) * wheelRectangle.height() / 2);
+			} else {
+				y = (int)(-Math.sin(pointerAngle * Math.PI / 180.0) * wheelRectangle.height() / 2);
+			}
+			progressDrawable.setBounds(
+					(int)(x - wheelRectangle.width() * progressDrawableSize / 1000),
+					(int)(y - wheelRectangle.height() * progressDrawableSize / 1000),
+					(int)(x + wheelRectangle.width() * progressDrawableSize / 1000),
+					(int)(y + wheelRectangle.height() * progressDrawableSize / 1000));
+			progressDrawable.draw(canvas);
 		}
 		
-		if (pointerType == 0) {
-			// pointer
-			if (isWheelDirectionClockwise) {
-				double pointerAngle = wheelWholeAngle * (getProgress() + 0.5 - min) / (1.0 + max - min) + wheelZeroAngle;
-				while (pointerAngle > 360.0) {
-					pointerAngle -= 360.0;
-				}
-				canvas.drawArc(wheelRectangle, (float) pointerAngle - pointerSizeAngle / 2f, pointerSizeAngle, false, pointerPaint);
-			} else {
-				double pointerAngle = -wheelWholeAngle * (getProgress() + 0.5 - min) / (1.0 + max - min) + wheelZeroAngle;
-				while (pointerAngle > 360.0) {
-					pointerAngle -= 360.0;
-				}
-				canvas.drawArc(wheelRectangle, ((float) pointerAngle - pointerSizeAngle / 2f), pointerSizeAngle, false, pointerPaint);
-			}
-		} else if (pointerType == 1) {
-			// value
-			if (isWheelDirectionClockwise) {
-				float minAngle = wheelZeroAngle;
-				double pointerAngle = (getProgress() - min) * wheelWholeAngle / (1.0 + max - min);
-				if (getProgress() == max) {
-					pointerAngle = wheelWholeAngle;
-					pointerAngle -= 0.001;
-				}
-				canvas.drawArc(wheelRectangle, minAngle, (float) pointerAngle, false, pointerPaint);
-			} else {
-				float minAngle = wheelZeroAngle;
-				double pointerAngle = (getProgress() - min) * wheelWholeAngle / (1.0 + max - min);
-				if (getProgress() == max) {
-					pointerAngle = wheelWholeAngle;
-					pointerAngle -= 0.001;
-				}
-				canvas.drawArc(wheelRectangle, (float) (minAngle - pointerAngle), (float) pointerAngle, false, pointerPaint);
-			}
-		}
 		drawTextCenter(canvas, 0, 0, Integer.toString(getProgress()));
 	}
 	
