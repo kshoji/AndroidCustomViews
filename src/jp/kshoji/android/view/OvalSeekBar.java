@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -114,7 +115,8 @@ public class OvalSeekBar extends SeekBar {
 		canvas.drawText(textToDraw, x / 2, y / 2 + (bounds.height() * 0.3f), textPaint);
 	}
 	
-	
+	long nextFrameTime;
+	int currentFrameIndex;
 	/*
 	 * (non-Javadoc)
 	 * @see android.view.View#onDraw(android.graphics.Canvas)
@@ -182,7 +184,29 @@ public class OvalSeekBar extends SeekBar {
 					(int)(y - wheelRectangle.height() * progressDrawableSize / 1000),
 					(int)(x + wheelRectangle.width() * progressDrawableSize / 1000),
 					(int)(y + wheelRectangle.height() * progressDrawableSize / 1000));
-			progressDrawable.draw(canvas);
+			if (progressDrawable instanceof AnimationDrawable) {
+				AnimationDrawable animationDrawable = (AnimationDrawable) progressDrawable;
+				
+				long now = System.currentTimeMillis();
+				if (now > nextFrameTime) {
+					animationDrawable.run();
+							
+					if (++currentFrameIndex >= animationDrawable.getNumberOfFrames()) {
+						if (!animationDrawable.isOneShot()) {
+							currentFrameIndex = 0;
+							nextFrameTime = now + animationDrawable.getDuration(0);
+						} else {
+							currentFrameIndex = animationDrawable.getNumberOfFrames() - 1;
+						}
+					} else {
+						nextFrameTime = now + animationDrawable.getDuration(currentFrameIndex);
+					}
+				}
+				animationDrawable.getFrame(currentFrameIndex).draw(canvas);
+				
+			} else {
+				progressDrawable.draw(canvas);
+			}
 		}
 		
 		drawTextCenter(canvas, 0, 0, Integer.toString(getProgress()));
